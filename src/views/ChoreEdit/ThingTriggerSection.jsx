@@ -57,6 +57,8 @@ const ThingTriggerSection = ({
   const [selectedThing, setSelectedThing] = useState(null)
   const [condition, setCondition] = useState(null)
   const [triggerState, setTriggerState] = useState(null)
+  const [actionType, setActionType] = useState(null)
+  const [actionValue, setActionValue] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -64,6 +66,8 @@ const ThingTriggerSection = ({
       setSelectedThing(things?.find(t => t.id === selected.thingId))
       setCondition(selected.condition)
       setTriggerState(selected.triggerState)
+      setActionType(selected.actionType || null)
+      setActionValue(selected.actionValue || '')
     }
   }, [things])
 
@@ -73,6 +77,8 @@ const ThingTriggerSection = ({
         thing: selectedThing,
         condition: condition,
         triggerState: triggerState,
+        actionType: actionType,
+        actionValue: actionValue,
       })
     }
     if (isValidTrigger(selectedThing, condition, triggerState)) {
@@ -80,7 +86,7 @@ const ThingTriggerSection = ({
     } else {
       onValidate(false)
     }
-  }, [selectedThing, condition, triggerState])
+  }, [selectedThing, condition, triggerState, actionType, actionValue])
 
   return (
     <Card sx={{ mt: 1 }}>
@@ -217,6 +223,67 @@ const ThingTriggerSection = ({
             onChange={e => setTriggerState(e.target.value)}
             label='Enter the text to trigger the task'
           />
+        </Box>
+      )}
+
+      {/* Thing Actions Section */}
+      {selectedThing && (
+        <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Typography level='h5' sx={{ mb: 2 }}>
+            Action after task completion
+          </Typography>
+          <Typography level='body-sm' sx={{ mb: 2 }}>
+            Automatically update {selectedThing.name} when this task is completed
+          </Typography>
+
+          <FormControl sx={{ mb: 2 }}>
+            <Typography level='body-sm' sx={{ mb: 1 }}>Action Type</Typography>
+            <Select
+              value={actionType}
+              onChange={(e, newValue) => setActionType(newValue)}
+              placeholder="Select action type"
+            >
+              <Option value={null}>None - Don't change thing state</Option>
+              {selectedThing.type === 'boolean' && (
+                <Option value='toggle'>Toggle - Switch between true/false</Option>
+              )}
+              <Option value='set'>Set - Set to specific value</Option>
+              {selectedThing.type === 'number' && (
+                <>
+                  <Option value='increment'>Increment - Increase value</Option>
+                  <Option value='decrement'>Decrement - Decrease value</Option>
+                </>
+              )}
+            </Select>
+          </FormControl>
+
+          {actionType && actionType !== 'toggle' && actionType !== null && (
+            <FormControl>
+              <Typography level='body-sm' sx={{ mb: 1 }}>
+                {actionType === 'set' && 'Value to set'}
+                {actionType === 'increment' && 'Amount to increment (default: 1)'}
+                {actionType === 'decrement' && 'Amount to decrement (default: 1)'}
+              </Typography>
+              <Input
+                type={selectedThing.type === 'number' ? 'number' : 'text'}
+                value={actionValue}
+                onChange={e => setActionValue(e.target.value)}
+                placeholder={
+                  selectedThing.type === 'boolean'
+                    ? 'true or false'
+                    : selectedThing.type === 'number'
+                    ? '1'
+                    : 'Enter value'
+                }
+              />
+            </FormControl>
+          )}
+
+          {actionType === 'toggle' && selectedThing.type === 'boolean' && (
+            <Typography level='body-sm' color='primary'>
+              This will switch {selectedThing.name} between true and false
+            </Typography>
+          )}
         </Box>
       )}
     </Card>

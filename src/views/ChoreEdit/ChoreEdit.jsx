@@ -823,6 +823,8 @@ const ChoreEdit = () => {
               triggerState: thingUpdate.triggerState,
               condition: thingUpdate.condition,
               thingID: thingUpdate.thing.id,
+              actionType: thingUpdate.actionType,
+              actionValue: thingUpdate.actionValue,
             })
           }}
           OnTriggerValidate={setIsThingValid}
