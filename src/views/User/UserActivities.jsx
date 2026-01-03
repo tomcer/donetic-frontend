@@ -43,7 +43,8 @@ const groupByDate = history => {
   const aggregated = {}
   for (let i = 0; i < history.length; i++) {
     const item = history[i]
-    const date = new Date(item.performedAt).toLocaleDateString()
+    // Use ISO date string (YYYY-MM-DD) for grouping to avoid parsing issues
+    const date = new Date(item.performedAt).toISOString().split('T')[0]
     if (!aggregated[date]) {
       aggregated[date] = []
     }

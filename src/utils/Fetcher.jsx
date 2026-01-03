@@ -156,6 +156,15 @@ const SkipChore = id => {
   })
 }
 
+const UndoChoreComplete = (id, newDueDate = null) => {
+  const body = newDueDate ? { newDueDate } : {}
+  return Fetch(`/chores/${id}/undo`, {
+    method: 'POST',
+    headers: HEADERS(),
+    body: JSON.stringify(body),
+  })
+}
+
 const ApproveChore = id => {
   return Fetch(`/chores/${id}/approve`, {
     method: 'POST',
@@ -814,6 +823,7 @@ export {
   SkipChore,
   StartChore,
   UnArchiveChore,
+  UndoChoreComplete,
   UnregisterDeviceToken,
   UpdateChildPassword,
   UpdateChoreAssignee,

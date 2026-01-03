@@ -62,7 +62,7 @@ const UserPoints = () => {
     data: choresHistoryData,
     isLoading: isChoresHistoryLoading,
     handleLimitChange: handleChoresHistoryLimitChange,
-  } = useChoresHistory(7)
+  } = useChoresHistory(7, true)
 
   const { data: userProfile } = useUserProfile()
   const [selectedUser, setSelectedUser] = useState(userProfile?.id)

@@ -15,6 +15,7 @@ import {
   SwitchAccessShortcut,
   ThumbDown,
   ThumbUp,
+  Undo,
 } from '@mui/icons-material'
 import {
   Box,
@@ -60,6 +61,7 @@ import {
   MarkChoreComplete,
   RejectChore,
   SkipChore,
+  UndoChoreComplete,
   UpdateChorePriority,
 } from '../../utils/Fetcher'
 import Priorities from '../../utils/Priorities'
@@ -86,6 +88,8 @@ const ChoreView = () => {
   const [timeoutId, setTimeoutId] = useState(null)
   const [secondsLeftToCancel, setSecondsLeftToCancel] = useState(null)
   const [completedDate, setCompletedDate] = useState(null)
+  const [customPoints, setCustomPoints] = useState(null)
+  const [completedBy, setCompletedBy] = useState(null)
   const [confirmModelConfig, setConfirmModelConfig] = useState({})
   const [chorePriority, setChorePriority] = useState(null)
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false)
@@ -198,11 +202,23 @@ const ChoreView = () => {
     }, 1000)
 
     const id = setTimeout(() => {
+      const requestBody = { note }
+
+      // Add completedBy if impersonated or explicitly set
+      if (impersonatedUser) {
+        requestBody.completedBy = impersonatedUser.userId
+      } else if (completedBy) {
+        requestBody.completedBy = completedBy
+      }
+
+      // Add custom points if set
+      if (customPoints !== null && customPoints !== '') {
+        requestBody.points = parseInt(customPoints, 10)
+      }
+
       MarkChoreComplete(
         choreId,
-        impersonatedUser
-          ? { completedBy: impersonatedUser.userId, note }
-          : { note },
+        requestBody,
         completedDate,
         null,
       )
@@ -249,6 +265,27 @@ const ChoreView = () => {
       }
     })
   }
+
+  const handleUndoCompletion = newDueDate => {
+    UndoChoreComplete(choreId, newDueDate).then(response => {
+      if (response.ok) {
+        response.json().then(data => {
+          setChore(data.res)
+          // Invalidate chores cache to refetch data
+          queryClient.invalidateQueries(['chores'])
+          // Refresh chore details
+          GetChoreDetailById(choreId).then(resp => {
+            if (resp.ok) {
+              return resp.json().then(detailData => {
+                setChore(detailData.res)
+              })
+            }
+          })
+        })
+      }
+    })
+  }
+
   const handleChoreStart = () => {
     startChore.mutate(choreId, {
       onSuccess: data => {
@@ -802,6 +839,97 @@ const ChoreView = () => {
           />
         )}
 
+        <FormControl size='sm'>
+          <Checkbox
+            checked={customPoints !== null}
+            size='lg'
+            onChange={e => {
+              if (e.target.checked) {
+                setCustomPoints(chore.points || 0)
+              } else {
+                setCustomPoints(null)
+              }
+            }}
+            overlay
+            label={
+              <Typography
+                level='body-sm'
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                Adjust points for this completion
+              </Typography>
+            }
+          />
+        </FormControl>
+        {customPoints !== null && (
+          <Input
+            sx={{ mt: 1, mb: 1.5, width: 150 }}
+            type='number'
+            value={customPoints}
+            onChange={e => {
+              setCustomPoints(e.target.value)
+            }}
+            slotProps={{
+              input: {
+                min: 0,
+                step: 1,
+              },
+            }}
+          />
+        )}
+
+        {!impersonatedUser && (
+          <>
+            <FormControl size='sm'>
+              <Checkbox
+                checked={completedBy !== null}
+                size='lg'
+                onChange={e => {
+                  if (e.target.checked) {
+                    setCompletedBy(chore.assignedTo)
+                  } else {
+                    setCompletedBy(null)
+                  }
+                }}
+                overlay
+                label={
+                  <Typography
+                    level='body-sm'
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    Change who completed this
+                  </Typography>
+                }
+              />
+            </FormControl>
+            {completedBy !== null && (
+              <FormControl sx={{ mt: 1, mb: 1.5, minWidth: 200 }}>
+                <select
+                  value={completedBy || ''}
+                  onChange={e => setCompletedBy(parseInt(e.target.value, 10))}
+                  style={{
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                  }}
+                >
+                  {circleMembersData?.res?.map(member => (
+                    <option key={member.userId} value={member.userId}>
+                      {member.displayName || member.username}
+                    </option>
+                  ))}
+                </select>
+              </FormControl>
+            )}
+          </>
+        )}
+
         <Box
           sx={{
             display: 'flex',
@@ -869,6 +997,7 @@ const ChoreView = () => {
                   size='lg'
                   onClick={handleTaskCompletion}
                   disabled={
+                    (chore.canComplete !== undefined && !chore.canComplete) ||
                     isPendingCompletion ||
                     notInCompletionWindow(chore) ||
                     (chore.lastCompletedDate !== null &&
@@ -904,8 +1033,9 @@ const ChoreView = () => {
                     })
                   }}
                   disabled={
-                    chore.lastCompletedDate !== null &&
-                    chore.frequencyType === 'once'
+                    (chore.canComplete !== undefined && !chore.canComplete) ||
+                    (chore.lastCompletedDate !== null &&
+                    chore.frequencyType === 'once')
                   }
                   startDecorator={<SwitchAccessShortcut />}
                   sx={{
@@ -921,8 +1051,9 @@ const ChoreView = () => {
           {[ChoreStatus.ACTIVE, ChoreStatus.PAUSED].includes(chore.status) ? (
             <TimerSplitButton
               disabled={
-                chore.lastCompletedDate !== null &&
-                chore.frequencyType === 'once'
+                (chore.canComplete !== undefined && !chore.canComplete) ||
+                (chore.lastCompletedDate !== null &&
+                chore.frequencyType === 'once')
               }
               chore={chore}
               onAction={action => {
@@ -948,8 +1079,9 @@ const ChoreView = () => {
               variant='soft'
               color='success'
               disabled={
-                chore.lastCompletedDate !== null &&
-                chore.frequencyType === 'once'
+                (chore.canComplete !== undefined && !chore.canComplete) ||
+                (chore.lastCompletedDate !== null &&
+                chore.frequencyType === 'once')
               }
               startDecorator={<PlayArrow />}
               sx={{
@@ -957,6 +1089,38 @@ const ChoreView = () => {
               }}
             >
               Start
+            </Button>
+          )}
+
+          {/* Undo Last Completion Button - Show if chore has been completed at least once */}
+          {chore.lastCompletedDate && (
+            <Button
+              size='lg'
+              onClick={() => {
+                setConfirmModelConfig({
+                  isOpen: true,
+                  title: 'Undo Last Completion',
+                  message:
+                    'Are you sure you want to undo the last completion? Points will be deducted and the task will return to its previous assignee.',
+                  confirmText: 'Undo',
+                  cancelText: 'Cancel',
+                  onClose: confirmed => {
+                    if (confirmed) {
+                      handleUndoCompletion(null)
+                    }
+                    setConfirmModelConfig({})
+                  },
+                })
+              }}
+              variant='outlined'
+              color='warning'
+              startDecorator={<Undo />}
+              sx={{
+                flex: 1,
+                mt: 1,
+              }}
+            >
+              Undo Last Completion
             </Button>
           )}
         </Box>
