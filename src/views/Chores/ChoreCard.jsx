@@ -271,7 +271,13 @@ const ChoreCard = ({
   }, [hoverTimer])
 
   const getDueDateChipText = nextDueDate => {
-    if (chore.nextDueDate === null) return 'No Due Date'
+    if (nextDueDate === null) {
+      // For archived chores, show completion date instead of "No Due Date"
+      if (chore.isActive === false && chore.updatedAt) {
+        return 'Completed ' + moment(chore.updatedAt).fromNow()
+      }
+      return 'No Due Date'
+    }
     // if due in next 48 hours, we should it in this format : Tomorrow 11:00 AM
     const diff = moment(nextDueDate).diff(moment(), 'hours')
     if (diff < 48 && diff > 0) {
@@ -280,7 +286,13 @@ const ChoreCard = ({
     return 'Due ' + moment(nextDueDate).fromNow()
   }
   const getDueDateChipColor = nextDueDate => {
-    if (chore.nextDueDate === null) return 'neutral'
+    if (nextDueDate === null) {
+      // For archived chores, show success color
+      if (chore.isActive === false) {
+        return 'success'
+      }
+      return 'neutral'
+    }
     const diff = moment(nextDueDate).diff(moment(), 'hours')
     if (diff < 48 && diff > 0) {
       return 'warning'

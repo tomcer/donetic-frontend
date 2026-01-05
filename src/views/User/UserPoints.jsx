@@ -72,9 +72,8 @@ const UserPoints = () => {
   useEffect(() => {
     if (circleMembersData && choresHistoryData && userProfile) {
       setCircleUsers(circleMembersData.res)
-      setSelectedHistory(
-        generateWeeklySummary(choresHistoryData, userProfile?.id),
-      )
+      // Don't set selectedHistory here - let the second useEffect handle it
+      // based on selectedUser to avoid overwriting user selection
     }
   }, [circleMembersData, choresHistoryData, userProfile])
 
@@ -109,16 +108,20 @@ const UserPoints = () => {
         tasks: 0,
       })
     }
-    history.forEach(chore => {
+
+    // Filter history by userId first
+    const filteredHistory = userId
+      ? history.filter(chore => chore.completedBy === userId)
+      : history
+
+    filteredHistory.forEach(chore => {
       const dayName = new Date(chore.performedAt).toLocaleString('en-US', {
         weekday: 'short',
       })
 
-      const dayIndex = daysAggregated.findIndex(dayData => {
-        if (userId)
-          return dayData.label === dayName && chore.completedBy === userId
-        return dayData.label === dayName
-      })
+      const dayIndex = daysAggregated.findIndex(dayData =>
+        dayData.label === dayName
+      )
       if (dayIndex !== -1) {
         if (chore.points) daysAggregated[dayIndex].points += chore.points
         daysAggregated[dayIndex].tasks += 1
@@ -138,16 +141,20 @@ const UserPoints = () => {
         tasks: 0,
       })
     }
-    history.forEach(chore => {
+
+    // Filter history by userId first
+    const filteredHistory = userId
+      ? history.filter(chore => chore.completedBy === userId)
+      : history
+
+    filteredHistory.forEach(chore => {
       const dayName = new Date(chore.performedAt).toLocaleString('en-US', {
         day: 'numeric',
       })
 
-      const dayIndex = daysAggregated.findIndex(dayData => {
-        if (userId)
-          return dayData.label === dayName && chore.completedBy === userId
-        return dayData.label === dayName
-      })
+      const dayIndex = daysAggregated.findIndex(dayData =>
+        dayData.label === dayName
+      )
 
       if (dayIndex !== -1) {
         if (chore.points) daysAggregated[dayIndex].points += chore.points
@@ -169,16 +176,20 @@ const UserPoints = () => {
         tasks: 0,
       })
     }
-    history.forEach(chore => {
+
+    // Filter history by userId first
+    const filteredHistory = userId
+      ? history.filter(chore => chore.completedBy === userId)
+      : history
+
+    filteredHistory.forEach(chore => {
       const monthName = new Date(chore.performedAt).toLocaleString('en-US', {
         month: 'short',
       })
 
-      const monthIndex = monthlyAggregated.findIndex(monthData => {
-        if (userId)
-          return monthData.label === monthName && chore.completedBy === userId
-        return monthData.label === monthName
-      })
+      const monthIndex = monthlyAggregated.findIndex(monthData =>
+        monthData.label === monthName
+      )
 
       if (monthIndex !== -1) {
         if (chore.points) monthlyAggregated[monthIndex].points += chore.points
@@ -200,16 +211,20 @@ const UserPoints = () => {
         tasks: 0,
       })
     }
-    history.forEach(chore => {
+
+    // Filter history by userId first
+    const filteredHistory = userId
+      ? history.filter(chore => chore.completedBy === userId)
+      : history
+
+    filteredHistory.forEach(chore => {
       const yearName = new Date(chore.performedAt).toLocaleString('en-US', {
         year: 'numeric',
       })
 
-      const yearIndex = yearlyAggregated.findIndex(yearData => {
-        if (userId)
-          return yearData.label === yearName && chore.completedBy === userId
-        return yearData.label === yearName
-      })
+      const yearIndex = yearlyAggregated.findIndex(yearData =>
+        yearData.label === yearName
+      )
 
       if (yearIndex !== -1) {
         if (chore.points) yearlyAggregated[yearIndex].points += chore.points

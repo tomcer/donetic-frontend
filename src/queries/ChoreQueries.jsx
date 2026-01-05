@@ -254,7 +254,7 @@ export const useChoresHistory = (initialLimit, includeMembers) => {
   const [limit, setLimit] = useState(initialLimit) // Initially, no limit is selected
 
   const { data, error, isLoading } = useQuery({
-    queryKey: ['choresHistory', limit],
+    queryKey: ['choresHistory', limit, includeMembers],
     queryFn: async () => {
       const resp = await GetChoresHistory(limit, includeMembers)
       return resp?.res || []
